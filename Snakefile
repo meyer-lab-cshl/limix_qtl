@@ -10,8 +10,7 @@ min_version("6.10.0")
 
 ##### functions #####
 def extendChunk(chunk):
-    relChunk = chunk.pop()
-    chunkSplitted = relChunk.split("_")
+    chunkSplitted = chunk.split("_")
     return chunkSplitted[0]+":"+chunkSplitted[1]+"-"+chunkSplitted[2]
 
 ## Variables ##
