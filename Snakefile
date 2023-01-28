@@ -1,28 +1,11 @@
-import glob
 import os
-from subprocess import run
-import pandas as pd
-import re
-from os.path import join
+
 
 shell.prefix("set -euo pipefail;")
 
-def _multi_arg_start(flag, files):
-    flag += " "
-    return " ".join(flag + f for f in files)
 
-def _multi_arg_end(flag, files):
-    flag = " "+flag
-    return " ".join(f + flag for f in files)
 
-def _multi_arg_both_ends(flag1, flag2, files):
-    flag1 += " "
-    flag2 = " "+flag2
-    return " ".join(flag1 + f + flag2 for f in files)
-
-def flatenChunk(chunk):
-    return chunk.replace(":", "_").replace("-", "_")
-
+##### functions #####
 def extendChunk(chunk):
     relChunk = chunk.pop()
     chunkSplitted = relChunk.split("_")
