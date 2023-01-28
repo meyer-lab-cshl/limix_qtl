@@ -55,24 +55,25 @@ finalQTLRun = outputFolder+'qtl_results_all.txt'
 topQTL = outputFolder+'top_qtl_results_all.txt'
 
 
-with open(chunkFile,'r') as f:
-    chunks = [x.strip() for x in f.readlines()]
+if False:
+    with open(chunkFile,'r') as f:
+        chunks = [x.strip() for x in f.readlines()]
 
-qtlOutput = []
-for chunk in chunks:
-    #print(chunk)
-    processedChunk = flatenChunk(chunk)
-    #print(processedChunk)
-    processedChunk=expand(outputFolder+'{chunk}.finished',chunk=processedChunk )
-    #print(processedChunk)
-    qtlOutput.append(processedChunk)
+    qtlOutput = []
+    for chunk in chunks:
+        #print(chunk)
+        processedChunk = flatenChunk(chunk)
+        #print(processedChunk)
+        processedChunk=expand(outputFolder+'{chunk}.finished',chunk=processedChunk )
+        #print(processedChunk)
+        qtlOutput.append(processedChunk)
 
-## flatten these lists
-qtlOutput = [filename for elem in qtlOutput for filename in elem]
+    ## flatten these lists
+    qtlOutput = [filename for elem in qtlOutput for filename in elem]
 
 rule all:
     input:
-        qtlOutput,finalQTLRun,topQTL
+        finalQTLRun, topQTL
 
 
 rule generate_chunks:
@@ -88,7 +89,7 @@ rule generate_chunks:
         "Limix_QTL/scripts/generate_chunks.R"
 
 
-rule run_qtl_mapping:
+checkpoint run_qtl_mapping:
     input:
         af = annotationFile,
         pf = phenotypeFile,
@@ -96,7 +97,7 @@ rule run_qtl_mapping:
         kf = kinshipFile,
         smf = sampleMappingFile
     output:
-        outputFolder + '{chunk}.finished'
+        directory(outputFolder/{chunk})
     params:
         gen=genotypeFile,
         od = outputFolder,
@@ -104,24 +105,23 @@ rule run_qtl_mapping:
         maf = minorAlleleFrequency,
         hwe = hwequilibrium,
         w = windowSize,
-    run:
-        chunkFull = extendChunk({wildcards.chunk})
-        shell(
-            " singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py  "
-            " --bgen {params.gen} "
-            " -af {input.af} "
-            " -pf {input.pf} "
-            " -cf {input.cf} "
-            " -od {params.od} "
-            " -rf {input.kf} "
-            " --sample_mapping_file {input.smf} "
-            " -gr {chunkFull} "
-            " -np {params.np} "
-            " -maf {params.maf} "
-            " -hwe {params.hwe} "
-            " -w {params.w} "
-            " -c -gm gaussnorm -bs 500 -rs 0.95 ")
-        shell("touch {output}")
+    shell:
+        """
+        singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py  \
+            --bgen {params.gen} \
+            -af {input.af} \
+            -pf {input.pf} \
+            -cf {input.cf} \
+            -od {params.od} \
+            -rf {input.kf} \
+            --sample_mapping_file {input.smf} \
+            -gr {wildcards.chunk} \
+            -np {params.np} \
+            -maf {params.maf} \
+            -hwe {params.hwe} \
+            -w {params.w} \
+            -c -gm gaussnorm -bs 500 -rs 0.95
+        """
 
 rule aggregate_qtl_results:
     input:
