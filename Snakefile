@@ -113,12 +113,13 @@ rule aggregate_qtl_results:
         finalFiles = qtlOutput
     output:
         finalQTLRun
-    run:
-        shell(
-            " singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py "
-            " -id {input.IF} "
-            " -od {input.OF} "
-            " -sfo ")
+    shell:
+        """
+        singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py
+            -id {input.IF} \
+            -od {input.OF} \
+            -sfo
+        """
 
 rule top_feature:
     input:
@@ -128,10 +129,11 @@ rule top_feature:
     output:
         topQTL
     run:
-        shell(
-            " singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py "
-            "-id {input.IF} "
-            "-od {input.OF} "
-            "-tfb "
-            "-sfo ")
+        """
+        singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py \
+            -id {input.IF} \
+            -od {input.OF} \
+            -tfb \
+            -sfo
+        """
 
