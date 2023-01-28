@@ -31,14 +31,14 @@ def extendChunk(chunk):
 ## Variables ##
 ## Files, these are populated now with the test examples and we use here plink genotypes.
 chunkFile =  "Limix_QTL/test_data/Expression/chunks_Geuvadis_CEU_Annot.txt"
-genotypeFile = '/limix_qtl/Limix_QTL/test_data/Genotypes/Geuvadis'  ##Genotype without file extension. Please update flag in the runner to reflect --plink or --bgen 
-kinshipFile = '/limix_qtl/Limix_QTL/test_data/Genotypes/Geuvadis_chr1_kinship'
-annotationFile = '/limix_qtl/Limix_QTL/test_data/Expression/Geuvadis_CEU_Annot.txt'
-phenotypeFile = '/limix_qtl/Limix_QTL/test_data/Expression/Geuvadis_CEU_YRI_Expr.txt'
-covariateFile = '/limix_qtl/Limix_QTL/test_data/Expression/Geuvadis_CEU_YRI_covariates.txt'
+genotypeFile = 'Limix_QTL/test_data/Genotypes/Geuvadis'  ##Genotype without file extension. Please update flag in the runner to reflect --plink or --bgen
+kinshipFile = 'Limix_QTL/test_data/Genotypes/Geuvadis_chr1_kinship.normalized.txt'
+annotationFile = 'Limix_QTL/test_data/Expression/Geuvadis_CEU_Annot.txt'
+phenotypeFile = 'Limix_QTL/test_data/Expression/Geuvadis_CEU_YRI_Expr.txt'
+covariateFile = 'Limix_QTL/test_data/Expression/Geuvadis_CEU_YRI_covariates.txt'
 randomEffFile = '' #no second random effect in this example
-sampleMappingFile = '/limix_qtl/Limix_QTL/test_data/Expression/Geuvadis_CEU_Annot.txt' 
-outputFolder = './OutGeuvadis/'
+sampleMappingFile = 'Limix_QTL/test_data/Geuvadis_CEU_gte.txt'
+outputFolder = 'OutGeuvadis/'
 
 ## Settings
 nGenes = 50
@@ -107,7 +107,8 @@ checkpoint run_qtl_mapping:
         w = windowSize,
     shell:
         """
-        singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py  \
+        #singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py
+        python ./Limix_QTL/run_QTL_analysis.py
             --bgen {params.gen} \
             -af {input.af} \
             -pf {input.pf} \
@@ -125,31 +126,39 @@ checkpoint run_qtl_mapping:
 
 rule aggregate_qtl_results:
     input:
+        #finalFiles = qtlOutput
+        finalFiles = expand(outputFolder + '{chunk}.finished',
+                            chunk=[flatenChunk(c) for c in chunks])
+    params:
         IF = outputFolder,
         OF = outputFolder,
-        finalFiles = qtlOutput
     output:
         finalQTLRun
     shell:
         """
-        singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py
-            -id {input.IF} \
-            -od {input.OF} \
+        #singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py
+        python ./Limix_QTL/post_processing/minimal_postprocess.py \
+            -id {params.IF} \
+            -od {params.OF} \
             -sfo
         """
 
 rule top_feature:
     input:
+        #IF = outputFolder,
+        #OF = outputFolder,
+        finalFile = finalQTLRun
+    params:
         IF = outputFolder,
         OF = outputFolder,
-        finalFile = finalQTLRun
     output:
         topQTL
     run:
         """
-        singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py \
-            -id {input.IF} \
-            -od {input.OF} \
+        #singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py
+        python ./Limix_QTL/post_processing/minimal_postprocess.py \
+            -id {params.IF} \
+            -od {params.OF} \
             -tfb \
             -sfo
         """
