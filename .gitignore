@@ -1,5 +1,3 @@
 limix_qtl.Rproj
-.Rproj.user
-.Rhistory
-.RData
-.Ruserdata
+.*
+!.gitignore
