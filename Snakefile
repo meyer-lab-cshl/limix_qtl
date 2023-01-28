@@ -1,8 +1,11 @@
 import os
 
+from snakemake.utils import min_version
 
 shell.prefix("set -euo pipefail;")
 
+##### set minimum snakemake version #####
+min_version("6.10.0")
 
 
 ##### functions #####
