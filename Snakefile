@@ -29,8 +29,8 @@ def extendChunk(chunk):
     return chunkSplitted[0]+":"+chunkSplitted[1]+"-"+chunkSplitted[2]
 
 ## Variables ##
-##Files, these are populated now with the test examples and we use here plink genotypes.
-chunkFile = './Chunks.txt' ##Not provided in the repo, instructions can be found on the repo wiki.
+## Files, these are populated now with the test examples and we use here plink genotypes.
+chunkFile =  "Limix_QTL/test_data/Expression/chunks_Geuvadis_CEU_Annot.txt"
 genotypeFile = '/limix_qtl/Limix_QTL/test_data/Genotypes/Geuvadis'  ##Genotype without file extension. Please update flag in the runner to reflect --plink or --bgen 
 kinshipFile = '/limix_qtl/Limix_QTL/test_data/Genotypes/Geuvadis_chr1_kinship'
 annotationFile = '/limix_qtl/Limix_QTL/test_data/Expression/Geuvadis_CEU_Annot.txt'
@@ -40,7 +40,10 @@ randomEffFile = '' #no second random effect in this example
 sampleMappingFile = '/limix_qtl/Limix_QTL/test_data/Expression/Geuvadis_CEU_Annot.txt' 
 outputFolder = './OutGeuvadis/'
 
-##Settings
+## Settings
+nGenes = 50
+startPos = 0
+endOffset = 1000000000
 numberOfPermutations = '1000'
 minorAlleleFrequency = '0.1'
 windowSize = '1000000'
@@ -70,6 +73,20 @@ qtlOutput = [filename for elem in qtlOutput for filename in elem]
 rule all:
     input:
         qtlOutput,finalQTLRun,topQTL
+
+
+rule generate_chunks:
+    input:
+        annotation=annotationFile
+    output:
+        chunks=chunkFile
+    params:
+        nGenes = nGenes,
+        startPos = startPos,
+        endOffset = endOffset
+    script:
+        "Limix_QTL/scripts/generate_chunks.R"
+
 
 rule run_qtl_mapping:
     input:
