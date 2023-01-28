@@ -38,7 +38,7 @@ phenotypeFile = 'Limix_QTL/test_data/Expression/Geuvadis_CEU_YRI_Expr.txt'
 covariateFile = 'Limix_QTL/test_data/Expression/Geuvadis_CEU_YRI_covariates.txt'
 randomEffFile = '' #no second random effect in this example
 sampleMappingFile = 'Limix_QTL/test_data/Geuvadis_CEU_gte.txt'
-outputFolder = 'OutGeuvadis/'
+outputFolder = 'OutGeuvadis'
 
 ## Settings
 nGenes = 50
@@ -51,25 +51,9 @@ hwequilibrium = '0.000001'
 FDR = '0.05'
 ## End Variables ##
 
-finalQTLRun = outputFolder+'qtl_results_all.txt'
-topQTL = outputFolder+'top_qtl_results_all.txt'
+finalQTLRun = outputFolder + '/qtl_results_all.txt'
+topQTL = outputFolder + '/top_qtl_results_all.txt'
 
-
-if False:
-    with open(chunkFile,'r') as f:
-        chunks = [x.strip() for x in f.readlines()]
-
-    qtlOutput = []
-    for chunk in chunks:
-        #print(chunk)
-        processedChunk = flatenChunk(chunk)
-        #print(processedChunk)
-        processedChunk=expand(outputFolder+'{chunk}.finished',chunk=processedChunk )
-        #print(processedChunk)
-        qtlOutput.append(processedChunk)
-
-    ## flatten these lists
-    qtlOutput = [filename for elem in qtlOutput for filename in elem]
 
 rule all:
     input:
@@ -89,7 +73,20 @@ rule generate_chunks:
         "Limix_QTL/scripts/generate_chunks.R"
 
 
-checkpoint run_qtl_mapping:
+checkpoint setup_chunk_analysis:
+    input:
+        chunks=chunkFile
+    output:
+        directory(outputFolder + "/chunks")
+    shell:
+        """
+        mkdir {output}
+        for chunk in $(cat {input.chunks}); do
+            echo $chunk > {output}/${{chunk//[:-]/_}}
+        done
+        """
+
+rule run_qtl_mapping:
     input:
         af = annotationFile,
         pf = phenotypeFile,
@@ -97,10 +94,11 @@ checkpoint run_qtl_mapping:
         kf = kinshipFile,
         smf = sampleMappingFile
     output:
-        directory(outputFolder/{chunk})
+        outputFolder + "/chunks/qtl_results_{chunk}.h5"
     params:
+        chunkstr=lambda wildcards: extendChunk(wildcards.chunk),
         gen=genotypeFile,
-        od = outputFolder,
+        od = outputFolder + "/chunks",
         np = numberOfPermutations,
         maf = minorAlleleFrequency,
         hwe = hwequilibrium,
@@ -108,7 +106,7 @@ checkpoint run_qtl_mapping:
     shell:
         """
         #singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py
-        python ./Limix_QTL/run_QTL_analysis.py
+        python Limix_QTL/run_QTL_analysis.py \
             --bgen {params.gen} \
             -af {input.af} \
             -pf {input.pf} \
@@ -116,7 +114,7 @@ checkpoint run_qtl_mapping:
             -od {params.od} \
             -rf {input.kf} \
             --sample_mapping_file {input.smf} \
-            -gr {wildcards.chunk} \
+            -gr {params.chunkstr} \
             -np {params.np} \
             -maf {params.maf} \
             -hwe {params.hwe} \
@@ -124,20 +122,24 @@ checkpoint run_qtl_mapping:
             -c -gm gaussnorm -bs 500 -rs 0.95
         """
 
+def collect_qtl_result_files(wildcards):
+    checkpoint_output = checkpoints.setup_chunk_analysis.get(**wildcards).output[0]
+    return expand(checkpoint_output + "/qtl_results_{chunk}.h5",
+           chunk=glob_wildcards(os.path.join(checkpoint_output, "{chunk}")).chunk)
+
+
 rule aggregate_qtl_results:
     input:
-        #finalFiles = qtlOutput
-        finalFiles = expand(outputFolder + '{chunk}.finished',
-                            chunk=[flatenChunk(c) for c in chunks])
+        collect_qtl_result_files,
+    output:
+        finalQTLRun
     params:
         IF = outputFolder,
         OF = outputFolder,
-    output:
-        finalQTLRun
     shell:
         """
         #singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py
-        python ./Limix_QTL/post_processing/minimal_postprocess.py \
+        python Limix_QTL/post_processing/minimal_postprocess.py \
             -id {params.IF} \
             -od {params.OF} \
             -sfo
@@ -145,18 +147,16 @@ rule aggregate_qtl_results:
 
 rule top_feature:
     input:
-        #IF = outputFolder,
-        #OF = outputFolder,
         finalFile = finalQTLRun
+    output:
+        topQTL
     params:
         IF = outputFolder,
         OF = outputFolder,
-    output:
-        topQTL
     run:
         """
         #singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py
-        python ./Limix_QTL/post_processing/minimal_postprocess.py \
+        python Limix_QTL/post_processing/minimal_postprocess.py \
             -id {params.IF} \
             -od {params.OF} \
             -tfb \
