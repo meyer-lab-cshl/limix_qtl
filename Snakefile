@@ -15,10 +15,9 @@ def extendChunk(chunk):
 
 ## Variables ##
 ## Files, these are populated now with the test examples and we use here plink genotypes.
-chunkFile =  "Limix_QTL/test_data/Expression/chunks_Geuvadis_CEU_Annot.txt"
 genotypeFile = 'Limix_QTL/test_data/Genotypes/Geuvadis'  ##Genotype without file extension. Please update flag in the runner to reflect --plink or --bgen
 kinshipFile = 'Limix_QTL/test_data/Genotypes/Geuvadis_chr1_kinship.normalized.txt'
-annotationFile = 'Limix_QTL/test_data/Expression/Geuvadis_CEU_Annot.txt'
+annotationFile = 'Limix_QTL/test_data/Expression/Geuvadis_CEU_Annot_chr1_small.txt'
 phenotypeFile = 'Limix_QTL/test_data/Expression/Geuvadis_CEU_YRI_Expr.txt'
 covariateFile = 'Limix_QTL/test_data/Expression/Geuvadis_CEU_YRI_covariates.txt'
 randomEffFile = '' #no second random effect in this example
@@ -26,7 +25,7 @@ sampleMappingFile = 'Limix_QTL/test_data/Geuvadis_CEU_gte.txt'
 outputFolder = 'OutGeuvadis'
 
 ## Settings
-nGenes = 50
+nGenes = 5 # recommend to set to 50; 5 used here for toy dataset
 startPos = 0
 endOffset = 1000000000
 numberOfPermutations = '1000'
