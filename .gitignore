@@ -1,4 +1,7 @@
-limix_qtl.Rproj
-.*
-*/__pycache__/*
+*
+!LICENSE
+!Limix_QTL
+!Snakefile
+!limix.def
+!readme.md
 !.gitignore
