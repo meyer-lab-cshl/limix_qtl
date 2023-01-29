@@ -1,24 +1,33 @@
+log <- file(snakemake@log[[1]], open="wt")
+sink(log)
+sink(log, type="message")
+
 library(matrixStats)
 library(readr)
 library(dplyr)
 
 ## gene annotation ####
-infile <- "Limix_QTL/test_data/Expression/Geuvadis_CEU_Annot.txt"
-nGenes <- 50
-startPos <- 0
-endOffset <- 1000000000
-outfile <- "Limix_QTL/test_data/Expression/chunks_Geuvadis_CEU_Annot.txt"
-  
-#infile <- snakemake@input['annotation']
-#nGenes <- snakemake@params['ngenes']
-#startPos <- snakemake@params['startPos']
-#endOffset <- snakemake@params['endOffset']
-#outfile <- snakemake@output['chunks']
+#Example files for testing
+#infile <- "Limix_QTL/test_data/Expression/Geuvadis_CEU_Annot_chr1_small.txt"
+#nGenes <- 5
+#startPos <- 0
+#endOffset <- 1000000000
+#outfile <- "OutGeuvadis/chunks.txt"
 
-gene_anno <- read.delim(infile, as.is=TRUE)
+infile <- snakemake@input[['annotation']]
+nGenes <- snakemake@params[['nGenes']]
+startPos <- snakemake@params[['startPos']]
+endOffset <- snakemake@params[['endOffset']]
+outfile <- snakemake@output[['chunks']]
 
-if(file.exists(outfile)) file.remove(outfile)
 
+message("Reading annotation file: ", infile)
+gene_anno <- read_delim(infile)
+
+message("Process annotations, group features in chunks of ", nGenes, ",
+        save as range")
+
+gr <- c()
 for(chr in sort(unique(gene_anno$chromosome))){
   
   annotationRel <- gene_anno %>%
@@ -45,11 +54,14 @@ for(chr in sort(unique(gene_anno$chromosome))){
     chunks <- c(chunks, (nrow(annotationRel)+1))
   }
   for(i in 1:(length(chunks)-1)){
-    write_delim(data.frame(paste(chr,":",
+    gr <- c(gr, paste(chr,":",
                 annotationRel$start[chunks[i]], "-",
                 annotationRel$end[(chunks[i+1]-1)],
-                sep="")),
-                outfile,
-                append=TRUE)
+                sep=""))
   }
 }
+message("Features process and chunking finished, write to chunk file: ",
+        outfile)
+
+write_delim(as.data.frame(gr), outfile, col_names = FALSE)
+message("Finished")
