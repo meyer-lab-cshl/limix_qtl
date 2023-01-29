@@ -1,3 +1,4 @@
 limix_qtl.Rproj
 .*
+*/__pycache__/*
 !.gitignore
