@@ -122,8 +122,8 @@ rule aggregate_qtl_results:
     output:
         finalQTLRun
     params:
-        IF = outputFolder,
-        OF = outputFolder,
+        IF = outputFolder + "/chunks",
+        OF = outputFolder + "/"
     shell:
         """
         #singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py
@@ -139,9 +139,9 @@ rule top_feature:
     output:
         topQTL
     params:
-        IF = outputFolder,
-        OF = outputFolder,
-    run:
+        IF = outputFolder + "/chunks",
+        OF = outputFolder + "/"
+    shell:
         """
         #singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py
         python Limix_QTL/post_processing/minimal_postprocess.py \
