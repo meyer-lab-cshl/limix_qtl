@@ -43,12 +43,13 @@ rule all:
     input:
         finalQTLRun, topQTL
 
-
 rule generate_chunks:
     input:
         annotation=annotationFile
     output:
-        chunks=chunkFile
+        chunks=outputFolder + "/chunks.txt"
+    log:
+        outputFolder + "log/generate_chunks.log"
     params:
         nGenes = nGenes,
         startPos = startPos,
@@ -56,22 +57,22 @@ rule generate_chunks:
     script:
         "Limix_QTL/scripts/generate_chunks.R"
 
-
 checkpoint setup_chunk_analysis:
     input:
-        chunks=chunkFile
+        chunks=outputFolder + "/chunks.txt"
     output:
         directory(outputFolder + "/chunks")
     shell:
         """
         mkdir {output}
         for chunk in $(cat {input.chunks}); do
-            echo $chunk > {output}/${{chunk//[:-]/_}}
+            echo $chunk > {output}/${{chunk//[:-]/_}}_info
         done
         """
 
 rule run_qtl_mapping:
     input:
+        chunkinfo = outputFolder + "/chunks/{chunk}_info",
         af = annotationFile,
         pf = phenotypeFile,
         cf = covariateFile,
@@ -87,6 +88,9 @@ rule run_qtl_mapping:
         maf = minorAlleleFrequency,
         hwe = hwequilibrium,
         w = windowSize,
+    wildcard_constraints:
+        chunk="\d{1,2}_\d*_\d*"
+
     shell:
         """
         #singularity exec --bind ~ ~/limix.simg python /limix_qtl/Limix_QTL/post-processing_QTL/minimal_postprocess.py
@@ -108,9 +112,9 @@ rule run_qtl_mapping:
 
 def collect_qtl_result_files(wildcards):
     checkpoint_output = checkpoints.setup_chunk_analysis.get(**wildcards).output[0]
+    wc=glob_wildcards(os.path.join(checkpoint_output, "{chunk}_info"))
     return expand(checkpoint_output + "/qtl_results_{chunk}.h5",
-           chunk=glob_wildcards(os.path.join(checkpoint_output, "{chunk}")).chunk)
-
+            chunk=wc.chunk)
 
 rule aggregate_qtl_results:
     input:
